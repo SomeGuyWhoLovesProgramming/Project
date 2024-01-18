@@ -79,14 +79,6 @@ class Hitbox:
         if response:
             response(direction)
 
-class Sprite(pygame.sprite.Sprite):
-    def __init__(self, file_path):
-        super().__init__() # initialises default sprite object
-
-        self.image = pygame.image.load(file_path).convert()
-
-        self.image.set_colorkey((255, 255, 255))
-
 pygame.init()
 
 width, height = 800, 600
@@ -110,7 +102,7 @@ movement_velocity = 100
 
 player_hitbox = Hitbox(pos, size)
 ground_hitbox = Hitbox(Vector(0, height - 20), Vector(width, 20))
-platform_hitbox = Hitbox(Vector(width // 2 - 100, 400), Vector(200, 100))
+platform_hitbox = Hitbox(Vector(width // 2 - 100, 375), Vector(200, 100))
 
 # 0: right
 # 1: top
@@ -136,8 +128,6 @@ def rth_platform(direction):
 
 counter = 0
 while running:
-    print(can_jump)
-
     if player_hitbox.check_hitbox(ground_hitbox):
         player_hitbox.reposition_hitbox(ground_hitbox, rth_ground)
 
