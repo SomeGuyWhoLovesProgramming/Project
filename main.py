@@ -53,6 +53,12 @@ class Hitbox:
 
         return collision_x and collision_y
 
+    def check_hitbox_point(self, point):
+        collision_x = self.Position.X <= point.X and point.X <= self.Position.X + self.Size.X
+        collision_y = self.Position.Y <= point.Y and point.Y <= self.Position.Y + self.Size.Y
+
+        return collision_x and collision_y
+
     def reposition_hitbox(self, hitbox, response): # assuming a collision has occurred
         avg_pos = self.Position + self.Size * 0.5
         avg_hitbox_pos = hitbox.Position + hitbox.Size * 0.5
@@ -78,6 +84,16 @@ class Hitbox:
 
         if response:
             response(direction)
+
+buttons = []
+
+class Button:
+    def __init__(self, pos, size, name, visible):
+        self.Hitbox = Hitbox(pos, size)
+        self.Name = name
+        self.Visible = visible
+
+        buttons.append(self)
 
 pygame.init()
 
@@ -126,6 +142,8 @@ def rth_platform(direction):
     elif direction == 3:
         velocity = Vector(velocity.X, -velocity.Y) # bounce
 
+Button(Vector(width / 2, height / 2), Vector(100, 50), "Test", True)
+
 counter = 0
 while running:
     if player_hitbox.check_hitbox(ground_hitbox):
@@ -135,19 +153,23 @@ while running:
         player_hitbox.reposition_hitbox(platform_hitbox, rth_platform)
 
     movement_vector = Vector(0, 0)
+    mouse_x, mouse_y = None, None
 
     for event in pygame.event.get():
         multiplier = 0
         change_of_key = False
 
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            multiplier = 1
-            change_of_key = True
-        elif event.type == pygame.KEYUP:
-            multiplier = -1
-            change_of_key = True
+        match event.type:
+            case pygame.QUIT:
+                running = False
+            case pygame.KEYDOWN:
+                multiplier = 1
+                change_of_key = True
+            case pygame.KEYUP:
+                multiplier = -1
+                change_of_key = True
+            case pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
 
         if change_of_key:
             match event.key:
@@ -170,6 +192,15 @@ while running:
     player_hitbox.Position += velocity * dt
 
     screen.fill(background_colour)
+
+    for i in buttons:
+        if i.Visible:
+            pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(*i.Hitbox.Position, *i.Hitbox.Size))
+
+    if mouse_x and mouse_y:
+        for i in buttons:
+            if i.Hitbox.check_hitbox_point(Vector(mouse_x, mouse_y)):
+                print(f"clicked on {i.Name}")
 
     pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
