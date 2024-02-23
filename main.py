@@ -1,5 +1,6 @@
 import pygame
 import math
+
 PI = math.pi
 
 class Vector:
@@ -59,7 +60,7 @@ class Hitbox:
 
         return collision_x and collision_y
 
-    def reposition_hitbox(self, hitbox, response): # assuming a collision has occurred
+    def reposition_hitbox(self, hitbox, response):  # assuming a collision has occurred
         avg_pos = self.Position + self.Size * 0.5
         avg_hitbox_pos = hitbox.Position + hitbox.Size * 0.5
         hitbox_to_pos = avg_pos - avg_hitbox_pos
@@ -142,7 +143,7 @@ def rth_platform(direction):
     elif direction == 3:
         velocity = Vector(velocity.X, -velocity.Y) # bounce
 
-Button(Vector(width / 2, height / 2), Vector(100, 50), "Test", True)
+Button(Vector(width / 2, height - 40), Vector(100, 50), "Test", True)
 
 counter = 0
 while running:
@@ -193,6 +194,10 @@ while running:
 
     screen.fill(background_colour)
 
+    pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
+    pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
+    pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
+
     for i in buttons:
         if i.Visible:
             pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(*i.Hitbox.Position, *i.Hitbox.Size))
@@ -201,10 +206,6 @@ while running:
         for i in buttons:
             if i.Hitbox.check_hitbox_point(Vector(mouse_x, mouse_y)):
                 print(f"clicked on {i.Name}")
-
-    pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
-    pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
-    pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) #  draw platform
 
     pygame.display.flip()
 
