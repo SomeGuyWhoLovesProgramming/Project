@@ -63,10 +63,12 @@ class Hitbox:
     def reposition_hitbox(self, hitbox, response):  # assuming a collision has occurred
         v1, v2 = hitbox.Position + hitbox.Size - self.Position, hitbox.Position - self.Position - self.Size
 
-        if abs(v1.X) < abs(v2.X):
-            v3 = Vector(v1.X, 0) # left edge was closer, always positive
-        else:
-            v3 = Vector(v2.X, 0) # right edge was closer, always negative
+        # if abs(v1.X) < abs(v2.X):
+        #     v3 = Vector(v1.X, 0) # left edge was closer, always positive
+        # else:
+        #     v3 = Vector(v2.X, 0) # right edge was closer, always negative
+
+        v3 = Vector(v1.X, 0) if abs(v1.X) < abs(v2.X) else Vector(v2.X, 0)
 
         if abs(v1.Y) < abs(v2.Y):
             v3.Y = v1.Y # top edge was closer, always positive
