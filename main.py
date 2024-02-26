@@ -1,6 +1,8 @@
 import pygame
 import math
 
+import pygame.draw
+
 PI = math.pi
 
 class Vector:
@@ -91,6 +93,12 @@ class Button:
 
         buttons.append(self)
 
+def load_image(sheet, image_offset, image_size):
+    image = pygame.Surface((image_size.X, image_size.Y)).convert_alpha()
+    image.blit(sheet, (image_offset.X, image_offset.Y))
+
+    return image
+
 pygame.init()
 
 width, height = 800, 600
@@ -98,6 +106,9 @@ width, height = 800, 600
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 running = True
+
+character_ss = pygame.image.load("Project\\Assets\\oak_woods_v1.0\\character\\char_blue.png").convert_alpha()
+frame_1 = load_image(character_ss, Vector(0, 0), Vector(64, 64))
 
 background_colour = (135, 206, 235)
 ground_colour = (0, 128, 40)
@@ -192,6 +203,8 @@ while running:
     pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
+
+    screen.blit(frame_1, (player_hitbox.Position.X, player_hitbox.Position.Y))
 
     for i in buttons:
         if i.Visible:
