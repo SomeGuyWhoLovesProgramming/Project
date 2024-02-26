@@ -61,27 +61,32 @@ class Hitbox:
         return collision_x and collision_y
 
     def reposition_hitbox(self, hitbox, response):  # assuming a collision has occurred
-        avg_pos = self.Position + self.Size * 0.5
-        avg_hitbox_pos = hitbox.Position + hitbox.Size * 0.5
-        hitbox_to_pos = avg_pos - avg_hitbox_pos
+        v1, v2 = hitbox.Position + hitbox.Size - self.Position, hitbox.Position - self.Position - self.Size
 
-        # scales vector from hitbox to self to a unit square
-        hitbox_to_pos = Vector(hitbox_to_pos.X / hitbox.Size.X, hitbox_to_pos.Y / hitbox.Size.Y)
+        if abs(v1.X) < abs(v2.X):
+            v3 = Vector(v1.X, 0) # left edge was closer, always positive
+        else:
+            v3 = Vector(v2.X, 0) # right edge was closer, always negative
 
-        radians = math.atan2(hitbox_to_pos.Y, hitbox_to_pos.X)
+        if abs(v1.Y) < abs(v2.Y):
+            v3.Y = v1.Y # top edge was closer, always positive
+        else:
+            v3.Y = v2.Y # bottom edge was closer, always negative
 
-        if -PI / 4 < radians < PI / 4: # right
-            self.Position.X = hitbox.Position.X + hitbox.Size.X
-            direction = 0
-        elif PI / 4 < radians < (3 * PI) / 4: # bottom
-            self.Position.Y = hitbox.Position.Y + hitbox.Size.Y
-            direction = 3
-        elif (3 * PI) / 4 < radians < PI or -PI < radians < (-3 * PI) / 4: # left
-            self.Position.X = hitbox.Position.X - self.Size.X
-            direction = 2
-        elif (-3 * PI) / 4 < radians < -PI / 4: # top
-            direction = 1
-            self.Position.Y = hitbox.Position.Y - self.Size.Y
+        if abs(v3.X) < abs(v3.Y):
+            if v3.X < 0:
+                direction = 2 # closest edge was the left one
+            else:
+                direction = 0 # closest edge was the right one
+
+            self.Position.X += v3.X # add difference
+        else:
+            if v3.Y < 0:
+                direction = 1 # closest edge was the top one
+            else:
+                direction = 3 # closest edge was the bottom one
+
+            self.Position.Y += v3.Y # add difference
 
         if response:
             response(direction)
