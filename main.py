@@ -1,8 +1,6 @@
 import pygame
 import math
 
-import pygame.draw
-
 PI = math.pi
 
 class Vector:
