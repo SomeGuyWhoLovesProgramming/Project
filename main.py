@@ -94,6 +94,7 @@ class Button:
 def load_image(sheet, image_offset, image_size):
     image = pygame.Surface((image_size.X, image_size.Y)).convert_alpha()
     image.blit(sheet, (image_offset.X, image_offset.Y))
+    image.set_colorkey((0, 0, 0))
 
     return image
 
@@ -105,7 +106,8 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 running = True
 
-character_ss = pygame.image.load("Project\\Assets\\oak_woods_v1.0\\character\\char_blue.png").convert_alpha()
+file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
+character_ss = pygame.image.load(file_path).convert_alpha()
 frame_1 = load_image(character_ss, Vector(0, 0), Vector(64, 64))
 
 background_colour = (135, 206, 235)
