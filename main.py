@@ -1,8 +1,6 @@
 import pygame
 import math
 
-PI = math.pi
-
 class Vector:
     def __init__(self, x, y):
         self.X = x
@@ -55,8 +53,8 @@ class Hitbox:
         return collision_x and collision_y
 
     def check_hitbox_point(self, point):
-        collision_x = self.Position.X <= point.X and point.X <= self.Position.X + self.Size.X
-        collision_y = self.Position.Y <= point.Y and point.Y <= self.Position.Y + self.Size.Y
+        collision_x = self.Position.X <= point.X <= self.Position.X + self.Size.X
+        collision_y = self.Position.Y <= point.Y <= self.Position.Y + self.Size.Y
 
         return collision_x and collision_y
 
@@ -130,6 +128,7 @@ scalar = Vector(2, 2)
 frame_1 = character_ss.load_image(Vector(18, 24), Vector(22, 32), scalar)
 player_sprite = Sprite(frame_1, pos, Vector(size.X * scalar.X, size.Y * scalar.Y))
 
+flipped = False
 can_jump = False
 jump_velocity = 100
 fall_velocity = 100
@@ -159,8 +158,6 @@ def rth_platform(direction):
         can_jump = True
     elif direction == 3:
         velocity = Vector(velocity.X, -velocity.Y) # bounce
-
-Button(Vector(width / 2, height - 40), Vector(100, 50), "Test", True)
 
 counter = 0
 while running:
@@ -210,7 +207,7 @@ while running:
     player_sprite.Hitbox.Position += velocity * dt
 
     screen.fill(background_colour)
-
+    
     # pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
