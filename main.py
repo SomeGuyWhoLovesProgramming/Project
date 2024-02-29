@@ -21,7 +21,7 @@ class Vector:
     def __iadd__(self, vec):
         return self.__add__(vec)
 
-    def __mul__(self, scalar):
+    def __mul__(self, scalar: int):
         return Vector(self.X * scalar, self.Y * scalar)
 
     def __str__(self): # for debugging purposes
@@ -84,19 +84,29 @@ class Hitbox:
 buttons = []
 
 class Button:
-    def __init__(self, pos, size, name, visible):
+    def __init__(self, pos: Vector, size, name, visible):
         self.Hitbox = Hitbox(pos, size)
         self.Name = name
         self.Visible = visible
 
         buttons.append(self)
 
-def load_image(sheet, image_offset, image_size):
-    image = pygame.Surface((image_size.X, image_size.Y)).convert_alpha()
-    image.blit(sheet, (image_offset.X, image_offset.Y))
-    image.set_colorkey((0, 0, 0))
+class Sprite:
+    def __init__(self, image, pos, size):
+        self.Image = image
+        self.Hitbox = Hitbox(pos, size)
 
-    return image
+class SpriteSheet:
+    def __init__(self, sheet_path):
+        self.Sheet = pygame.image.load(sheet_path).convert_alpha()
+
+    def load_image(self, image_offset, image_size, scale):
+        image = pygame.Surface((image_size.X, image_size.Y)).convert_alpha()
+        image.blit(self.Sheet, (0, 0), (image_offset.X, image_offset.Y, image_size.X, image_size.Y))
+        image = pygame.transform.scale(image, (image_size.X * scale.X, image_size.Y * scale.Y))
+        image.set_colorkey((0, 0, 0))
+
+        return image
 
 pygame.init()
 
@@ -106,24 +116,25 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 running = True
 
-file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
-character_ss = pygame.image.load(file_path).convert_alpha()
-frame_1 = load_image(character_ss, Vector(0, 0), Vector(64, 64))
-
 background_colour = (135, 206, 235)
 ground_colour = (0, 128, 40)
 colour = (0, 0, 0)
 
-size = Vector(80, 80)
+size = Vector(22, 32)
 pos = Vector(width // 2, 0)
 velocity = Vector(0, 0)
+
+file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
+character_ss = SpriteSheet(file_path)
+scalar = Vector(2, 2)
+frame_1 = character_ss.load_image(Vector(18, 24), Vector(22, 32), scalar)
+player_sprite = Sprite(frame_1, pos, Vector(size.X * scalar.X, size.Y * scalar.Y))
 
 can_jump = False
 jump_velocity = 100
 fall_velocity = 100
 movement_velocity = 100
 
-player_hitbox = Hitbox(pos, size)
 ground_hitbox = Hitbox(Vector(0, height - 20), Vector(width, 20))
 platform_hitbox = Hitbox(Vector(width // 2 - 100, 375), Vector(200, 100))
 
@@ -153,11 +164,11 @@ Button(Vector(width / 2, height - 40), Vector(100, 50), "Test", True)
 
 counter = 0
 while running:
-    if player_hitbox.check_hitbox(ground_hitbox):
-        player_hitbox.reposition_hitbox(ground_hitbox, rth_ground)
+    if player_sprite.Hitbox.check_hitbox(ground_hitbox):
+        player_sprite.Hitbox.reposition_hitbox(ground_hitbox, rth_ground)
 
-    if player_hitbox.check_hitbox(platform_hitbox):
-        player_hitbox.reposition_hitbox(platform_hitbox, rth_platform)
+    if player_sprite.Hitbox.check_hitbox(platform_hitbox):
+        player_sprite.Hitbox.reposition_hitbox(platform_hitbox, rth_platform)
 
     movement_vector = Vector(0, 0)
     mouse_x, mouse_y = None, None
@@ -196,15 +207,15 @@ while running:
     colour = (math.floor(counter / 4) % 255, math.floor(counter / 2) % 255, math.floor(counter) % 255)
     velocity += Vector(0, 1) # in pygame, up is down and vice versa
     velocity += movement_vector
-    player_hitbox.Position += velocity * dt
+    player_sprite.Hitbox.Position += velocity * dt
 
     screen.fill(background_colour)
 
-    pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
+    # pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
 
-    screen.blit(frame_1, (player_hitbox.Position.X, player_hitbox.Position.Y))
+    screen.blit(player_sprite.Image, (player_sprite.Hitbox.Position.X, player_sprite.Hitbox.Position.Y)) # draw character using sprite class
 
     for i in buttons:
         if i.Visible:
