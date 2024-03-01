@@ -106,6 +106,25 @@ class SpriteSheet:
 
         return image
 
+animations = []
+
+class Animation:
+    def __init__(self, sheet, initial_offset, offset, size, scale, number, threshold):
+        self.Sheet = sheet
+        self.FrameIndex = 0
+        self.TimeSinceLastFrame = 0
+        self.Threshold = threshold
+        self.Frames = []
+        self.FlippedFrames = []
+
+        for i in range(number):
+            image = self.Sheet.load_image(initial_offset + Vector(offset, 0) * i, size, scale)
+            flipped_image = pygame.transform.flip(image, True, False)
+            self.Frames.append(image)
+            self.FlippedFrames.append(flipped_image)
+
+        animations.append(self)
+
 pygame.init()
 
 width, height = 800, 600
@@ -121,17 +140,18 @@ colour = (0, 0, 0)
 size = Vector(22, 32)
 pos = Vector(width // 2, 0)
 velocity = Vector(0, 0)
+movement_vector = Vector(0, 0)
 
 file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
 character_ss = SpriteSheet(file_path)
-scalar = Vector(2, 2)
-frame_1 = character_ss.load_image(Vector(18, 24), Vector(22, 32), scalar)
-player_sprite = Sprite(frame_1, pos, Vector(size.X * scalar.X, size.Y * scalar.Y))
+scale = Vector(2, 2)
+player_animation = Animation(character_ss, Vector(18, 24), Vector(56, 0), scale, 6, 0.25)
+player_sprite = Sprite(player_animation.Frames[0], pos, Vector(size.X * scale.X, size.Y * scale.Y))
 
 flipped = False
 can_jump = False
 jump_velocity = 100
-fall_velocity = 100
+fall_acceleration = 200
 movement_velocity = 100
 
 ground_hitbox = Hitbox(Vector(0, height - 20), Vector(width, 20))
@@ -167,7 +187,6 @@ while running:
     if player_sprite.Hitbox.check_hitbox(platform_hitbox):
         player_sprite.Hitbox.reposition_hitbox(platform_hitbox, rth_platform)
 
-    movement_vector = Vector(0, 0)
     mouse_x, mouse_y = None, None
 
     for event in pygame.event.get():
@@ -197,14 +216,23 @@ while running:
                 case pygame.K_d:
                     movement_vector += Vector(movement_velocity, 0) * multiplier
 
+    flipped = movement_vector.X < 0 if movement_vector.X != 0 else flipped
+
     dt = clock.tick(75) / 1000
+
+    for i in animations:
+        i.TimeSinceLastFrame += dt
+
+        if i.TimeSinceLastFrame > i.Threshold:
+            pass
 
     counter += 1
 
     colour = (math.floor(counter / 4) % 255, math.floor(counter / 2) % 255, math.floor(counter) % 255)
-    velocity += Vector(0, 1) # in pygame, up is down and vice versa
+    velocity += Vector(0, fall_acceleration * dt) # in pygame, up is down and vice versa
     velocity += movement_vector
     player_sprite.Hitbox.Position += velocity * dt
+    velocity -= movement_vector
 
     screen.fill(background_colour)
     
@@ -212,7 +240,13 @@ while running:
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
 
-    screen.blit(player_sprite.Image, (player_sprite.Hitbox.Position.X, player_sprite.Hitbox.Position.Y)) # draw character using sprite class
+    if flipped:
+        flipped_image = pygame.transform.flip(player_sprite.Image, True, False).convert_alpha()
+        screen.blit(flipped_image, (player_sprite.Hitbox.Position.X, player_sprite.Hitbox.Position.Y))
+    else:
+        screen.blit(player_sprite.Image, (player_sprite.Hitbox.Position.X, player_sprite.Hitbox.Position.Y))
+
+     # draw character using sprite class
 
     for i in buttons:
         if i.Visible:
