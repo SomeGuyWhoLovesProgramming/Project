@@ -89,10 +89,32 @@ class Button:
 
         buttons.append(self)
 
+sprites = []
+
 class Sprite:
     def __init__(self, image, pos, size):
         self.Image = image
+        self.Flipped = False
         self.Hitbox = Hitbox(pos, size)
+        self.Animation = None
+
+        sprites.append(self)
+
+    def set_animation(self, animation):
+        self.Animation = animation
+
+    def play_animation(self):
+        if self.Animation:
+            self.Animation.IsPlaying = True
+
+    def stop_animation(self):
+        if self.Animation:
+            self.Animation.IsPlaying = False
+
+    def reset_animation(self):
+        if self.Animation:
+            self.Animation.FrameIndex = 0
+            self.Animation.TimeSinceLastFrame = 0
 
 class SpriteSheet:
     def __init__(self, sheet_path):
@@ -106,11 +128,11 @@ class SpriteSheet:
 
         return image
 
-animations = []
-
 class Animation:
-    def __init__(self, sheet, initial_offset, offset, size, scale, number, threshold):
+    def __init__(self, sheet, initial_offset, offset, loops, size, scale, number, threshold):
         self.Sheet = sheet
+        self.IsPlaying = False
+        self.Loops = loops
         self.FrameIndex = 0
         self.TimeSinceLastFrame = 0
         self.Threshold = threshold
@@ -118,12 +140,10 @@ class Animation:
         self.FlippedFrames = []
 
         for i in range(number):
-            image = self.Sheet.load_image(initial_offset + Vector(offset, 0) * i, size, scale)
-            flipped_image = pygame.transform.flip(image, True, False)
+            image = self.Sheet.load_image(initial_offset + offset * i, size, scale)
+            flipped_image = pygame.transform.flip(image, True, False).convert_alpha()
             self.Frames.append(image)
             self.FlippedFrames.append(flipped_image)
-
-        animations.append(self)
 
 pygame.init()
 
@@ -145,8 +165,14 @@ movement_vector = Vector(0, 0)
 file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
 character_ss = SpriteSheet(file_path)
 scale = Vector(2, 2)
-player_animation = Animation(character_ss, Vector(18, 24), Vector(56, 0), scale, 6, 0.25)
-player_sprite = Sprite(player_animation.Frames[0], pos, Vector(size.X * scale.X, size.Y * scale.Y))
+
+idle_animation = Animation(character_ss, Vector(18, 24), Vector(56, 0), True, size, scale, 6, 0.25)
+run_animation = Animation(character_ss, Vector(16, 135), Vector(56, 0), True, Vector(25, 33), scale, 8, 0.25)
+jump_animation = Animation(character_ss, Vector(16, 185), Vector(56,0), True, Vector(32, 39), scale, 8, 0.25)
+
+player_sprite = Sprite(idle_animation.Frames[0], pos, Vector(size.X * scale.X, size.Y * scale.Y))
+
+player_sprite.set_animation(idle_animation)
 
 flipped = False
 can_jump = False
@@ -216,15 +242,37 @@ while running:
                 case pygame.K_d:
                     movement_vector += Vector(movement_velocity, 0) * multiplier
 
-    flipped = movement_vector.X < 0 if movement_vector.X != 0 else flipped
+    player_sprite.Flipped = movement_vector.X < 0 if movement_vector.X != 0 else player_sprite.Flipped
+
+    if abs(movement_vector.X) > 0:
+        player_sprite.set_animation(run_animation)
+    else:
+        player_sprite.set_animation(idle_animation)
+
+    player_sprite.play_animation()
 
     dt = clock.tick(75) / 1000
 
-    for i in animations:
-        i.TimeSinceLastFrame += dt
+    for i in sprites:
+        if i.Animation and i.Animation.IsPlaying:
+            i.Animation.TimeSinceLastFrame += dt
 
-        if i.TimeSinceLastFrame > i.Threshold:
-            pass
+            if i.Animation.TimeSinceLastFrame >= i.Animation.Threshold:
+                i.Animation.TimeSinceLastFrame = 0
+                i.Animation.FrameIndex += 1
+
+                frames_len = len(i.Animation.Frames)
+
+                if i.Animation.FrameIndex == frames_len and not i.Animation.Loops:
+                    i.stop_animation()
+                    i.Animation.FrameIndex -= 1
+                else:
+                    i.Animation.FrameIndex %= frames_len
+
+        if i.Flipped:
+            i.Image = i.Animation.FlippedFrames[i.Animation.FrameIndex]
+        else:
+            i.Image = i.Animation.Frames[i.Animation.FrameIndex]
 
     counter += 1
 
@@ -240,13 +288,8 @@ while running:
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
     pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
 
-    if flipped:
-        flipped_image = pygame.transform.flip(player_sprite.Image, True, False).convert_alpha()
-        screen.blit(flipped_image, (player_sprite.Hitbox.Position.X, player_sprite.Hitbox.Position.Y))
-    else:
-        screen.blit(player_sprite.Image, (player_sprite.Hitbox.Position.X, player_sprite.Hitbox.Position.Y))
-
-     # draw character using sprite class
+    for i in sprites:
+        screen.blit(i.Image, (i.Hitbox.Position.X, i.Hitbox.Position.Y))
 
     for i in buttons:
         if i.Visible:
