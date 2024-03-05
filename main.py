@@ -145,6 +145,14 @@ class Animation:
             self.Frames.append(image)
             self.FlippedFrames.append(flipped_image)
 
+class Level:
+    def __init__(self, level_sheet, block_offset, block_size, scale, number_of_blocks, level_file):
+        self.LevelSheet = SpriteSheet(level_sheet)
+        self.Blocks = []
+
+        for i in range(number_of_blocks):
+            self.Blocks.append(self.LevelSheet.load_image(block_offset + block_size * i, block_size, scale))
+
 pygame.init()
 
 width, height = 800, 600
@@ -168,7 +176,7 @@ scale = Vector(2, 2)
 
 idle_animation = Animation(character_ss, Vector(18, 24), Vector(56, 0), True, size, scale, 6, 0.25)
 run_animation = Animation(character_ss, Vector(16, 135), Vector(56, 0), True, Vector(25, 33), scale, 8, 0.25)
-jump_animation = Animation(character_ss, Vector(16, 185), Vector(56,0), True, Vector(32, 39), scale, 8, 0.25)
+jump_animation = Animation(character_ss, Vector(16, 185), Vector(56,0), False, Vector(32, 39), scale, 8, 0.15)
 
 player_sprite = Sprite(idle_animation.Frames[0], pos, Vector(size.X * scale.X, size.Y * scale.Y))
 
@@ -248,6 +256,10 @@ while running:
         player_sprite.set_animation(run_animation)
     else:
         player_sprite.set_animation(idle_animation)
+
+    if not can_jump:
+        if velocity.Y < 0: # down is up
+            player_sprite.set_animation(jump_animation)
 
     player_sprite.play_animation()
 
