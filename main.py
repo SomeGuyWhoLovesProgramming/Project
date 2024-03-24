@@ -95,6 +95,8 @@ class Sprite:
     def __init__(self, image, pos, size, offset):
         self.Image = image
         self.Flipped = False
+        self.UnflippedImage = image
+        self.FlippedImage = pygame.transform.flip(image, False, True)
         self.Hitbox = Hitbox(pos, size)
         self.Offset = offset
         self.Animation = None
@@ -154,19 +156,26 @@ class Level:
         with open(f"Project/Levels/{level_name}") as level_file:
             filtered_level = level_file.read().split(",")
 
-            for i in filtered_level:
-                index = int(i)
+            for i in range(len(filtered_level)):
+                id = int(filtered_level[i])
 
-                x = (block_size * index) % width
-                y = (block_size * index) // width
+                if id == -1:
+                    continue
+
+                image_x = (block_size * id) % width
+                image_y = (block_size * id) // width
+
+                image_pos = Vector(image_x, image_y)
+                image_size = Vector(block_size, block_size)
+
+                image = self.LevelSheet.load_image(image_pos, image_size, scale)
+
+                x = (block_size * i) % width
+                y = ((block_size * i) // width) * block_size
 
                 block_pos = Vector(x, y)
-                block_size_vector = Vector(block_size, block_size)
 
-                block = self.LevelSheet.load_image(block_pos, block_size_vector, scale)
-
-                sprites.append(Sprite(block, block_pos, block_size_vector, Vector(0, 0)))
-
+                sprites.append(Sprite(image, block_pos, scale * block_size, Vector(0, 0)))
 
 pygame.init()
 
@@ -195,9 +204,8 @@ run_animation = Animation(character_ss, Vector(0, 112), Vector(56, 0), True, Vec
 jump_animation = Animation(character_ss, Vector(0, 168), Vector(56,0), False, Vector(56, 56), scale, 8, 0.15)
 falling_animation = Animation(character_ss, Vector(0, 224), Vector(56, 0), False, Vector(56, 56), scale, 8, 0.15)
 
-player_sprite = Sprite(idle_animation.Frames[0], pos, Vector(22 * scale.X, 32 * scale.Y), Vector(-18 * 2, -24 * 2))
-
 sample_level = Level("Project/Assets/oak_woods_v1.0/oak_woods_tileset.png", 24, scale, "SampleLevel")
+player_sprite = Sprite(idle_animation.Frames[0], pos, Vector(22 * scale.X, 32 * scale.Y), Vector(-18 * 2, -24 * 2))
 
 player_sprite.set_animation(idle_animation)
 
@@ -222,7 +230,6 @@ def rth_ground(direction):
 
     if direction == 1:
         can_jump = True
-        last_landing = counter
 
 def rth_platform(direction):
     global velocity, can_jump
@@ -235,12 +242,6 @@ def rth_platform(direction):
 
 counter = 0
 while running:
-    if player_sprite.Hitbox.check_hitbox(ground_hitbox):
-        player_sprite.Hitbox.reposition_hitbox(ground_hitbox, rth_ground)
-
-    if player_sprite.Hitbox.check_hitbox(platform_hitbox):
-        player_sprite.Hitbox.reposition_hitbox(platform_hitbox, rth_platform)
-
     mouse_x, mouse_y = None, None
 
     for event in pygame.event.get():
@@ -297,10 +298,16 @@ while running:
                 else:
                     i.Animation.FrameIndex %= frames_len
 
-        if i.Flipped:
-            i.Image = i.Animation.FlippedFrames[i.Animation.FrameIndex]
+            if i.Flipped:
+                i.Image = i.Animation.FlippedFrames[i.Animation.FrameIndex]
+            else:
+                i.Image = i.Animation.Frames[i.Animation.FrameIndex]
         else:
-            i.Image = i.Animation.Frames[i.Animation.FrameIndex]
+            if i.Flipped:
+                i.Image = i.FlippedImage
+            else:
+                i.Image = i.UnflippedImage
+
 
     if not can_jump:
         ratio_clamped = min(abs(velocity.Y) / jump_velocity * 5, 5)
@@ -324,16 +331,17 @@ while running:
     velocity -= movement_vector
 
     screen.fill(background_colour)
-    
-    # pygame.draw.rect(screen, colour, pygame.Rect(*player_hitbox.Position, *player_hitbox.Size)) # draw character
-    pygame.draw.rect(screen, ground_colour, pygame.Rect(*ground_hitbox.Position, *ground_hitbox.Size)) # draw ground
-    pygame.draw.rect(screen, ground_colour, pygame.Rect(*platform_hitbox.Position, *platform_hitbox.Size)) # draw platform
 
     for i in sprites:
         image_pos = i.Hitbox.Position + i.Offset
 
-        pygame.draw.rect(screen, ground_colour, pygame.Rect(*i.Hitbox.Position, *i.Hitbox.Size)) # for testing
         screen.blit(i.Image, (image_pos.X, image_pos.Y))
+
+        if player_sprite != i and player_sprite.Hitbox.check_hitbox(i.Hitbox):
+            if image_pos.Y == 576:
+                player_sprite.Hitbox.reposition_hitbox(i.Hitbox, rth_ground)
+            else:
+                player_sprite.Hitbox.reposition_hitbox(i.Hitbox, rth_platform)
 
     for i in buttons:
         if i.Visible:
