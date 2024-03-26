@@ -211,6 +211,7 @@ player_sprite.set_animation(idle_animation)
 
 flipped = False
 can_jump = False
+cam_pos = Vector(-width / 2, -height / 2)
 jump_velocity = 100
 fall_acceleration = 200
 movement_velocity = 100
@@ -325,15 +326,20 @@ while running:
 
     counter += 1
 
+    # velocity += Vector(0, fall_acceleration * dt) # in pygame, up is down and vice versa
+    # velocity += movement_vector
+    # player_sprite.Hitbox.Position += velocity * dt
+    # velocity -= movement_vector
+
+    player_sprite.Hitbox.Position += (velocity + Vector(0, fall_acceleration * dt) + Vector(0, fall_acceleration * 0.5 * dt)) * dt + movement_vector * dt
     velocity += Vector(0, fall_acceleration * dt) # in pygame, up is down and vice versa
-    velocity += movement_vector
-    player_sprite.Hitbox.Position += velocity * dt
-    velocity -= movement_vector
 
     screen.fill(background_colour)
 
+    cam_pos = player_sprite.Hitbox.Position + Vector(-width / 2, -height / 2)
+
     for i in sprites:
-        image_pos = i.Hitbox.Position + i.Offset
+        image_pos = i.Hitbox.Position + i.Offset - cam_pos
 
         screen.blit(i.Image, (image_pos.X, image_pos.Y))
 
