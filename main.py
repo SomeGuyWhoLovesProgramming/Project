@@ -193,11 +193,11 @@ pos = Vector(width // 2, 0)
 velocity = Vector(0, 0)
 movement_vector = Vector(0, 0)
 
+level_width = 400
+
 file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
 character_ss = SpriteSheet(file_path)
 scale = Vector(2, 2)
-
-# self, sheet, initial_offset, offset, loops, size, scale, number, threshold
 
 idle_animation = Animation(character_ss, Vector(0, 0), Vector(56, 0), True, Vector(56, 56), scale, 6, 0.25)
 run_animation = Animation(character_ss, Vector(0, 112), Vector(56, 0), True, Vector(56, 56), scale, 8, 0.25)
@@ -214,6 +214,7 @@ can_jump = False
 cam_pos = Vector(-width / 2, -height / 2)
 jump_velocity = 100
 fall_acceleration = 200
+fall_vector = Vector(0, fall_acceleration)
 movement_velocity = 100
 
 ground_hitbox = Hitbox(Vector(0, height - 20), Vector(width, 20))
@@ -326,17 +327,14 @@ while running:
 
     counter += 1
 
-    # velocity += Vector(0, fall_acceleration * dt) # in pygame, up is down and vice versa
-    # velocity += movement_vector
-    # player_sprite.Hitbox.Position += velocity * dt
-    # velocity -= movement_vector
-
-    player_sprite.Hitbox.Position += (velocity + Vector(0, fall_acceleration * dt) + Vector(0, fall_acceleration * 0.5 * dt)) * dt + movement_vector * dt
     velocity += Vector(0, fall_acceleration * dt) # in pygame, up is down and vice versa
+    velocity += movement_vector
+    player_sprite.Hitbox.Position += velocity * dt
+    velocity -= movement_vector
 
     screen.fill(background_colour)
 
-    cam_pos = player_sprite.Hitbox.Position + Vector(-width / 2, -height / 2)
+    cam_pos = Vector(player_sprite.Hitbox.Position.X // level_width, 0) * level_width
 
     for i in sprites:
         image_pos = i.Hitbox.Position + i.Offset - cam_pos
