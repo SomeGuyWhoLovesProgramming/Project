@@ -1,187 +1,16 @@
-import pygame
 import math
-
-class Vector:
-    def __init__(self, x, y):
-        self.X = x
-        self.Y = y
-        self._index = -1
-
-    def __add__(self, vec):
-        return Vector(self.X + vec.X, self.Y + vec.Y)
-
-    def __sub__(self, vec):
-        return Vector(self.X - vec.X, self.Y - vec.Y)
-
-    def __isub__(self, vec):
-        return Vector(self.X - vec.X, self.Y - vec.Y)
-
-    def __iadd__(self, vec):
-        return self.__add__(vec)
-
-    def __mul__(self, scalar: int):
-        return Vector(self.X * scalar, self.Y * scalar)
-
-    def __str__(self): # for debugging purposes
-        return f"({self.X}, {self.Y})"
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        self._index += 1
-
-        if self._index > 1:
-            self._index = -1
-            raise StopIteration
-
-        match self._index:
-            case 0:
-                return self.X
-            case 1:
-                return self.Y
-
-class Hitbox:
-    def __init__(self, pos, size):
-        self.Position = pos
-        self.Size = size
-
-    def check_hitbox(self, hitbox):
-        collision_x = self.Position.X + self.Size.X >= hitbox.Position.X and hitbox.Position.X + hitbox.Size.X >= self.Position.X
-        collision_y = self.Position.Y + self.Size.Y >= hitbox.Position.Y and hitbox.Position.Y + hitbox.Size.Y >= self.Position.Y
-
-        return collision_x and collision_y
-
-    def check_hitbox_point(self, point):
-        collision_x = self.Position.X <= point.X <= self.Position.X + self.Size.X
-        collision_y = self.Position.Y <= point.Y <= self.Position.Y + self.Size.Y
-
-        return collision_x and collision_y
-
-    def reposition_hitbox(self, hitbox, response):  # assuming a collision has occurred
-        v1, v2 = hitbox.Position + hitbox.Size - self.Position, hitbox.Position - self.Position - self.Size
-
-        # v1.X if left edge was closer, v2.X if right edge was closer
-        v3 = Vector(v1.X, 0) if abs(v1.X) < abs(v2.X) else Vector(v2.X, 0)
-
-        # v1.Y if top edge was closer, v2.Y if bottom edge was closer
-        v3.Y = v1.Y if abs(v1.Y) < abs(v2.Y) else v2.Y
-
-        if abs(v3.X) < abs(v3.Y):
-            direction = 2 if v3.X < 0 else 0 # assign direction based on edge
-
-            self.Position.X += v3.X # add difference
-        else:
-            direction = 1 if v3.Y < 0 else 3 # assign direction based on edge
-
-            self.Position.Y += v3.Y # add difference
-
-        if response:
-            response(direction)
-
-buttons = []
-
-class Button:
-    def __init__(self, pos, size, name, visible):
-        self.Hitbox = Hitbox(pos, size)
-        self.Name = name
-        self.Visible = visible
-
-        buttons.append(self)
-
-sprites = []
-
-class Sprite:
-    def __init__(self, image, pos, size, offset):
-        self.Image = image
-        self.Flipped = False
-        self.UnflippedImage = image
-        self.FlippedImage = pygame.transform.flip(image, False, True)
-        self.Hitbox = Hitbox(pos, size)
-        self.Offset = offset
-        self.Animation = None
-
-        sprites.append(self)
-
-    def set_animation(self, animation):
-        self.Animation = animation
-
-    def play_animation(self):
-        if self.Animation:
-            self.Animation.IsPlaying = True
-
-    def stop_animation(self):
-        if self.Animation:
-            self.Animation.IsPlaying = False
-
-    def reset_animation(self):
-        if self.Animation:
-            self.Animation.FrameIndex = 0
-            self.Animation.TimeSinceLastFrame = 0
-
-class SpriteSheet:
-    def __init__(self, sheet_path):
-        self.Sheet = pygame.image.load(sheet_path).convert_alpha()
-
-    def load_image(self, image_offset, image_size, scale):
-        image = pygame.Surface((image_size.X, image_size.Y)).convert_alpha()
-        image.blit(self.Sheet, (0, 0), (*image_offset, *image_size))
-        image = pygame.transform.scale(image, (image_size.X * scale.X, image_size.Y * scale.Y))
-        image.set_colorkey((0, 0, 0))
-
-        return image
-
-class Animation:
-    def __init__(self, sheet, initial_offset, offset, loops, size, scale, number, threshold):
-        self.Sheet = sheet
-        self.IsPlaying = False
-        self.Loops = loops
-        self.FrameIndex = 0
-        self.TimeSinceLastFrame = 0
-        self.Threshold = threshold
-        self.Frames = []
-        self.FlippedFrames = []
-
-        for i in range(number):
-            image = self.Sheet.load_image(initial_offset + offset * i, size, scale)
-            flipped_image = pygame.transform.flip(image, True, False).convert_alpha()
-            self.Frames.append(image)
-            self.FlippedFrames.append(flipped_image)
-
-class Level:
-    def __init__(self, level_sheet, block_size, scale, level_name):
-        self.LevelSheet = SpriteSheet(level_sheet)
-        self.Blocks = []
-
-        with open(f"Project/Levels/{level_name}") as level_file:
-            filtered_level = level_file.read().split(",")
-
-            for i in range(len(filtered_level)):
-                id = int(filtered_level[i])
-
-                if id == -1:
-                    continue
-
-                image_x = (block_size * id) % width
-                image_y = (block_size * id) // width
-
-                image_pos = Vector(image_x, image_y)
-                image_size = Vector(block_size, block_size)
-
-                image = self.LevelSheet.load_image(image_pos, image_size, scale)
-
-                x = (block_size * i) % width
-                y = ((block_size * i) // width) * block_size
-
-                block_pos = Vector(x, y)
-
-                sprites.append(Sprite(image, block_pos, scale * block_size, Vector(0, 0)))
+import classes
+from classes import *
 
 pygame.init()
 
-width, height = 600, 600
-
 screen = pygame.display.set_mode((width, height))
+
+classes.width = pygame.display.get_surface().get_width()
+classes.height = pygame.display.get_surface().get_height()
+
+classes.scale = Vector(classes.width, classes.height) // 300
+
 clock = pygame.time.Clock()
 running = True
 
@@ -197,25 +26,28 @@ level_width = 400
 
 file_path = "Project/Assets/oak_woods_v1.0/character/char_blue.png"
 character_ss = SpriteSheet(file_path)
-scale = Vector(2, 2)
 
-idle_animation = Animation(character_ss, Vector(0, 0), Vector(56, 0), True, Vector(56, 56), scale, 6, 0.25)
-run_animation = Animation(character_ss, Vector(0, 112), Vector(56, 0), True, Vector(56, 56), scale, 8, 0.25)
-jump_animation = Animation(character_ss, Vector(0, 168), Vector(56,0), False, Vector(56, 56), scale, 8, 0.15)
-falling_animation = Animation(character_ss, Vector(0, 224), Vector(56, 0), False, Vector(56, 56), scale, 8, 0.15)
+idle_animation = Animation(character_ss, Vector(0, 0), Vector(56, 0), True, Vector(56, 56), 6, 0.25)
+run_animation = Animation(character_ss, Vector(0, 112), Vector(56, 0), True, Vector(56, 56), 8, 0.25)
+jump_animation = Animation(character_ss, Vector(0, 168), Vector(56,0), False, Vector(56, 56), 8, 0.15)
+falling_animation = Animation(character_ss, Vector(0, 224), Vector(56, 0), False, Vector(56, 56), 8, 0.15)
 
-sample_level = Level("Project/Assets/oak_woods_v1.0/oak_woods_tileset.png", 24, scale, "SampleLevel")
-player_sprite = Sprite(idle_animation.Frames[0], pos, Vector(22 * scale.X, 32 * scale.Y), Vector(-18 * 2, -24 * 2))
+sample_level = Level("Project/Assets/oak_woods_v1.0/oak_woods_tileset.png", 24, "SampleLevel", "C:/Users/charl/PycharmProjects/Project/Project/Assets/oak_woods_v1.0/background", Vector(320, 180))
+player_sprite = Sprite(idle_animation.Frames[0], pos, Vector(22, 32), Vector(-18 * 2, -24 * 2), 2)
 
 player_sprite.set_animation(idle_animation)
 
 flipped = False
 can_jump = False
-cam_pos = Vector(-width / 2, -height / 2)
 jump_velocity = 100
 fall_acceleration = 200
 fall_vector = Vector(0, fall_acceleration)
 movement_velocity = 100
+
+desired_cam_pos = Vector(player_sprite.Hitbox.Position.X // level_width, 0) * level_width
+start_cam_pos = desired_cam_pos
+cam_pos = desired_cam_pos
+t = 0
 
 ground_hitbox = Hitbox(Vector(0, height - 20), Vector(width, 20))
 platform_hitbox = Hitbox(Vector(width // 2 - 100, 375), Vector(200, 100))
@@ -272,6 +104,8 @@ while running:
                     movement_vector += Vector(-movement_velocity, 0) * multiplier
                 case pygame.K_d:
                     movement_vector += Vector(movement_velocity, 0) * multiplier
+                case pygame.K_ESCAPE:
+                    running = False
 
     player_sprite.Flipped = movement_vector.X < 0 if movement_vector.X != 0 else player_sprite.Flipped
 
@@ -285,6 +119,9 @@ while running:
     dt = clock.tick(75) / 1000
 
     for i in sprites:
+        if i.Type == 0 or i.Type == 1:
+            continue
+
         if i.Animation and i.Animation.IsPlaying:
             i.Animation.TimeSinceLastFrame += dt
 
@@ -334,9 +171,22 @@ while running:
 
     screen.fill(background_colour)
 
-    cam_pos = Vector(player_sprite.Hitbox.Position.X // level_width, 0) * level_width
+    if desired_cam_pos != Vector(player_sprite.Hitbox.Position.X // level_width, 0) * level_width: # check if the desired position has moved
+        t = 0
+        start_cam_pos = cam_pos
+        desired_cam_pos = Vector(player_sprite.Hitbox.Position.X // level_width, 0) * level_width
+
+    t += dt
+
+    if t > 1:
+        t = 1
+
+    cam_pos = start_cam_pos + (desired_cam_pos - start_cam_pos) * (3 * t**2 - 2 * t**3)
 
     for i in sprites:
+        if i.Type == 0:
+            continue
+
         image_pos = i.Hitbox.Position + i.Offset - cam_pos
 
         screen.blit(i.Image, (image_pos.X, image_pos.Y))
